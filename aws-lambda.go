@@ -25,8 +25,6 @@ const (
 type metrics struct {
 	CloudWatchName string
 	MetricTypes    []metricType
-	MackerelName   string
-	Type           string
 }
 
 type metricType struct {
