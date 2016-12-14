@@ -36,8 +36,8 @@ type metricType struct {
 
 // LambdaPlugin mackerel plugin for aws kinesis
 type LambdaPlugin struct {
-	Name   string
-	Prefix string
+	FunctionName string
+	Prefix       string
 
 	AccessKeyID     string
 	SecretAccessKey string
@@ -83,7 +83,7 @@ func (p LambdaPlugin) getLastPoint(metric metrics) (*cloudwatch.Datapoint, error
 		Dimensions: []*cloudwatch.Dimension{
 			{
 				Name:  aws.String("FunctionName"),
-				Value: aws.String(p.Name),
+				Value: aws.String(p.FunctionName),
 			},
 		},
 		StartTime:  aws.Time(now.Add(time.Duration(180) * time.Second * -1)), // 3 min
@@ -183,7 +183,7 @@ func main() {
 	optAccessKeyID := flag.String("access-key-id", "", "AWS Access Key ID")
 	optSecretAccessKey := flag.String("secret-access-key", "", "AWS Secret Access Key")
 	optRegion := flag.String("region", "", "AWS Region")
-	optIdentifier := flag.String("identifier", "", "Stream Name")
+	optFunctionName := flag.String("function-name", "", "Function Name")
 	optTempfile := flag.String("tempfile", "", "Temp file name")
 	optPrefix := flag.String("metric-key-prefix", "lambda", "Metric key prefix")
 	flag.Parse()
@@ -194,7 +194,7 @@ func main() {
 	plugin.SecretAccessKey = *optSecretAccessKey
 	plugin.Region = *optRegion
 
-	plugin.Name = *optIdentifier
+	plugin.FunctionName = *optFunctionName
 	plugin.Prefix = *optPrefix
 
 	err := plugin.prepare()
