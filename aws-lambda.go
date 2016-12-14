@@ -154,7 +154,6 @@ func (p LambdaPlugin) FetchMetrics() (map[string]interface{}, error) {
 // GraphDefinition of LambdaPlugin
 func (p LambdaPlugin) GraphDefinition() map[string]mp.Graphs {
 	labelPrefix := strings.Title(p.Prefix)
-	labelPrefix = strings.Replace(labelPrefix, "-", " ", -1)
 
 	var graphdef = map[string]mp.Graphs{
 		"invocations": {
