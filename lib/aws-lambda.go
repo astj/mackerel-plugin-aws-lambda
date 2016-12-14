@@ -117,7 +117,7 @@ func getLastPointFromCloudWatch(cw cloudwatchiface.CloudWatchAPI, functionName s
 }
 
 // TransformMetrics converts some of datapoints to post differences of two metrics
-func (p LambdaPlugin) TransformMetrics(stats map[string]interface{}) map[string]interface{} {
+func transformMetrics(stats map[string]interface{}) map[string]interface{} {
 	// Although stats are interface{}, those values from cloudwatch.Datapoint are guaranteed to be float64.
 	if totalCount, ok := stats["TEMPORARY_invocations_total"].(float64); ok {
 		if errorCount, ok := stats["invocations_error"].(float64); ok {
@@ -130,9 +130,25 @@ func (p LambdaPlugin) TransformMetrics(stats map[string]interface{}) map[string]
 	return stats
 }
 
+func mergeStatsFromDatapoint(stats map[string]interface{}, dp *cloudwatch.Datapoint, mg metricsGroup) map[string]interface{} {
+	for _, met := range mg.Metrics {
+		switch met.Type {
+		case metricsTypeAverage:
+			stats[met.MackerelName] = *dp.Average
+		case metricsTypeSum:
+			stats[met.MackerelName] = *dp.Sum
+		case metricsTypeMaximum:
+			stats[met.MackerelName] = *dp.Maximum
+		case metricsTypeMinimum:
+			stats[met.MackerelName] = *dp.Minimum
+		}
+	}
+	return stats
+}
+
 // FetchMetrics fetch the metrics
 func (p LambdaPlugin) FetchMetrics() (map[string]interface{}, error) {
-	stat := make(map[string]interface{})
+	stats := make(map[string]interface{})
 
 	for _, met := range [...]metricsGroup{
 		{CloudWatchName: "Invocations", Metrics: []metric{
@@ -152,23 +168,12 @@ func (p LambdaPlugin) FetchMetrics() (map[string]interface{}, error) {
 	} {
 		v, err := getLastPointFromCloudWatch(p.CloudWatch, p.FunctionName, met)
 		if err == nil {
-			for _, typ := range met.Metrics {
-				switch typ.Type {
-				case metricsTypeAverage:
-					stat[typ.MackerelName] = *v.Average
-				case metricsTypeSum:
-					stat[typ.MackerelName] = *v.Sum
-				case metricsTypeMaximum:
-					stat[typ.MackerelName] = *v.Maximum
-				case metricsTypeMinimum:
-					stat[typ.MackerelName] = *v.Minimum
-				}
-			}
+			stats = mergeStatsFromDatapoint(stats, v, met)
 		} else {
 			log.Printf("%s: %s", met, err)
 		}
 	}
-	return p.TransformMetrics(stat), nil
+	return transformMetrics(stats), nil
 }
 
 // GraphDefinition of LambdaPlugin
