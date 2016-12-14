@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudwatch"
 	mp "github.com/mackerelio/go-mackerel-plugin-helper"
@@ -38,9 +39,10 @@ type LambdaPlugin struct {
 	Name   string
 	Prefix string
 
-	// AccessKeyID     string
-	// SecretAccessKey string
-	Region     string
+	AccessKeyID     string
+	SecretAccessKey string
+	Region          string
+
 	CloudWatch *cloudwatch.CloudWatch
 }
 
@@ -54,15 +56,21 @@ func (p LambdaPlugin) MetricKeyPrefix() string {
 
 // prepare creates CloudWatch instance
 func (p *LambdaPlugin) prepare() error {
+
 	sess, err := session.NewSession()
 	if err != nil {
 		return err
 	}
-	if p.Region != "" {
-		p.CloudWatch = cloudwatch.New(sess, aws.NewConfig().WithRegion(p.Region))
-	} else {
-		p.CloudWatch = cloudwatch.New(sess)
+
+	config := aws.NewConfig()
+	if p.AccessKeyID != "" && p.SecretAccessKey != "" {
+		config = config.WithCredentials(credentials.NewStaticCredentials(p.AccessKeyID, p.SecretAccessKey, ""))
 	}
+	if p.Region != "" {
+		config = config.WithRegion(p.Region)
+	}
+
+	p.CloudWatch = cloudwatch.New(sess, config)
 
 	return nil
 }
@@ -175,8 +183,8 @@ func (p LambdaPlugin) GraphDefinition() map[string]mp.Graphs {
 }
 
 func main() {
-	// optAccessKeyID := flag.String("access-key-id", "", "AWS Access Key ID")
-	// optSecretAccessKey := flag.String("secret-access-key", "", "AWS Secret Access Key")
+	optAccessKeyID := flag.String("access-key-id", "", "AWS Access Key ID")
+	optSecretAccessKey := flag.String("secret-access-key", "", "AWS Secret Access Key")
 	optRegion := flag.String("region", "", "AWS Region")
 	optIdentifier := flag.String("identifier", "", "Stream Name")
 	optTempfile := flag.String("tempfile", "", "Temp file name")
@@ -185,9 +193,10 @@ func main() {
 
 	var plugin LambdaPlugin
 
-	// plugin.AccessKeyID = *optAccessKeyID
-	// plugin.SecretAccessKey = *optSecretAccessKey
+	plugin.AccessKeyID = *optAccessKeyID
+	plugin.SecretAccessKey = *optSecretAccessKey
 	plugin.Region = *optRegion
+
 	plugin.Name = *optIdentifier
 	plugin.Prefix = *optPrefix
 
