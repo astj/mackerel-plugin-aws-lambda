@@ -146,26 +146,28 @@ func mergeStatsFromDatapoint(stats map[string]interface{}, dp *cloudwatch.Datapo
 	return stats
 }
 
+var lambdaMetricsGroup = []metricsGroup{
+	{CloudWatchName: "Invocations", Metrics: []metric{
+		{MackerelName: "TEMPORARY_invocations_total", Type: metricsTypeSum},
+	}},
+	{CloudWatchName: "Errors", Metrics: []metric{
+		{MackerelName: "invocations_error", Type: metricsTypeSum},
+	}},
+	{CloudWatchName: "Throttles", Metrics: []metric{
+		{MackerelName: "invocations_throttles", Type: metricsTypeSum},
+	}},
+	{CloudWatchName: "Duration", Metrics: []metric{
+		{MackerelName: "duration_avg", Type: metricsTypeAverage},
+		{MackerelName: "duration_max", Type: metricsTypeMaximum},
+		{MackerelName: "duration_min", Type: metricsTypeMinimum},
+	}},
+}
+
 // FetchMetrics fetch the metrics
 func (p LambdaPlugin) FetchMetrics() (map[string]interface{}, error) {
 	stats := make(map[string]interface{})
 
-	for _, met := range [...]metricsGroup{
-		{CloudWatchName: "Invocations", Metrics: []metric{
-			{MackerelName: "TEMPORARY_invocations_total", Type: metricsTypeSum},
-		}},
-		{CloudWatchName: "Errors", Metrics: []metric{
-			{MackerelName: "invocations_error", Type: metricsTypeSum},
-		}},
-		{CloudWatchName: "Throttles", Metrics: []metric{
-			{MackerelName: "invocations_throttles", Type: metricsTypeSum},
-		}},
-		{CloudWatchName: "Duration", Metrics: []metric{
-			{MackerelName: "duration_avg", Type: metricsTypeAverage},
-			{MackerelName: "duration_max", Type: metricsTypeMaximum},
-			{MackerelName: "duration_min", Type: metricsTypeMinimum},
-		}},
-	} {
+	for _, met := range lambdaMetricsGroup {
 		v, err := getLastPointFromCloudWatch(p.CloudWatch, p.FunctionName, met)
 		if err == nil {
 			stats = mergeStatsFromDatapoint(stats, v, met)
