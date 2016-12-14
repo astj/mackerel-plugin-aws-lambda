@@ -22,6 +22,7 @@ const (
 	metricsTypeMinimum = "Minimum"
 )
 
+// has 1 CloudWatch MetricName and corresponding N Mackerel Metrics
 type metricsGroup struct {
 	CloudWatchName string
 	Metrics        []metric
