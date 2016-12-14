@@ -120,9 +120,15 @@ func (p LambdaPlugin) FetchMetrics() (map[string]interface{}, error) {
 	stat := make(map[string]interface{})
 
 	for _, met := range [...]metricsGroup{
-		{CloudWatchName: "Invocations", Metrics: []metric{{MackerelName: "invocations_total", Type: metricsTypeSum}}},
-		{CloudWatchName: "Errors", Metrics: []metric{{MackerelName: "invocations_error", Type: metricsTypeSum}}},
-		{CloudWatchName: "Throttles", Metrics: []metric{{MackerelName: "invocations_throttles", Type: metricsTypeSum}}},
+		{CloudWatchName: "Invocations", Metrics: []metric{
+			{MackerelName: "invocations_total", Type: metricsTypeSum},
+		}},
+		{CloudWatchName: "Errors", Metrics: []metric{
+			{MackerelName: "invocations_error", Type: metricsTypeSum},
+		}},
+		{CloudWatchName: "Throttles", Metrics: []metric{
+			{MackerelName: "invocations_throttles", Type: metricsTypeSum},
+		}},
 		{CloudWatchName: "Duration", Metrics: []metric{
 			{MackerelName: "duration_avg", Type: metricsTypeAverage},
 			{MackerelName: "duration_max", Type: metricsTypeMaximum},
