@@ -11,6 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudwatch"
+	"github.com/aws/aws-sdk-go/service/cloudwatch/cloudwatchiface"
 	mp "github.com/mackerelio/go-mackerel-plugin-helper"
 )
 
@@ -72,17 +73,17 @@ func (p *LambdaPlugin) prepare() error {
 }
 
 // getLastPoint fetches a CloudWatch metric and parse
-func (p LambdaPlugin) getLastPoint(metric metricsGroup) (*cloudwatch.Datapoint, error) {
+func getLastPointFromCloudWatch(cw cloudwatchiface.CloudWatchAPI, functionName string, metric metricsGroup) (*cloudwatch.Datapoint, error) {
 	now := time.Now()
 	statsInput := make([]*string, len(metric.Metrics))
 	for i, typ := range metric.Metrics {
 		statsInput[i] = aws.String(typ.Type)
 	}
-	response, err := p.CloudWatch.GetMetricStatistics(&cloudwatch.GetMetricStatisticsInput{
+	response, err := cw.GetMetricStatistics(&cloudwatch.GetMetricStatisticsInput{
 		Dimensions: []*cloudwatch.Dimension{
 			{
 				Name:  aws.String("FunctionName"),
-				Value: aws.String(p.FunctionName),
+				Value: aws.String(functionName),
 			},
 		},
 		StartTime:  aws.Time(now.Add(time.Duration(180) * time.Second * -1)), // 3 min
@@ -117,11 +118,14 @@ func (p LambdaPlugin) getLastPoint(metric metricsGroup) (*cloudwatch.Datapoint, 
 
 // TransformMetrics converts some of datapoints to post differences of two metrics
 func (p LambdaPlugin) TransformMetrics(stats map[string]interface{}) map[string]interface{} {
+	// Although stats are interface{}, those values from cloudwatch.Datapoint are guaranteed to be float64.
 	if totalCount, ok := stats["TEMPORARY_invocations_total"].(float64); ok {
 		if errorCount, ok := stats["invocations_error"].(float64); ok {
 			stats["invocations_success"] = totalCount - errorCount
-			delete(stats, "TEMPORARY_invocations_total")
+		} else {
+			stats["invocations_success"] = totalCount
 		}
+		delete(stats, "TEMPORARY_invocations_total")
 	}
 	return stats
 }
@@ -146,7 +150,7 @@ func (p LambdaPlugin) FetchMetrics() (map[string]interface{}, error) {
 			{MackerelName: "duration_min", Type: metricsTypeMinimum},
 		}},
 	} {
-		v, err := p.getLastPoint(met)
+		v, err := getLastPointFromCloudWatch(p.CloudWatch, p.FunctionName, met)
 		if err == nil {
 			for _, typ := range met.Metrics {
 				switch typ.Type {
