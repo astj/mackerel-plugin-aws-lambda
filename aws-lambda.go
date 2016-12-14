@@ -115,13 +115,24 @@ func (p LambdaPlugin) getLastPoint(metric metricsGroup) (*cloudwatch.Datapoint, 
 	return latestDp, nil
 }
 
+// TransformMetrics converts some of datapoints to post differences of two metrics
+func (p LambdaPlugin) TransformMetrics(stats map[string]interface{}) map[string]interface{} {
+	if totalCount, ok := stats["TEMPORARY_invocations_total"].(float64); ok {
+		if errorCount, ok := stats["invocations_error"].(float64); ok {
+			stats["invocations_success"] = totalCount - errorCount
+			delete(stats, "TEMPORARY_invocations_total")
+		}
+	}
+	return stats
+}
+
 // FetchMetrics fetch the metrics
 func (p LambdaPlugin) FetchMetrics() (map[string]interface{}, error) {
 	stat := make(map[string]interface{})
 
 	for _, met := range [...]metricsGroup{
 		{CloudWatchName: "Invocations", Metrics: []metric{
-			{MackerelName: "invocations_total", Type: metricsTypeSum},
+			{MackerelName: "TEMPORARY_invocations_total", Type: metricsTypeSum},
 		}},
 		{CloudWatchName: "Errors", Metrics: []metric{
 			{MackerelName: "invocations_error", Type: metricsTypeSum},
@@ -153,7 +164,7 @@ func (p LambdaPlugin) FetchMetrics() (map[string]interface{}, error) {
 			log.Printf("%s: %s", met, err)
 		}
 	}
-	return stat, nil
+	return p.TransformMetrics(stat), nil
 }
 
 // GraphDefinition of LambdaPlugin
@@ -165,9 +176,9 @@ func (p LambdaPlugin) GraphDefinition() map[string]mp.Graphs {
 			Label: (labelPrefix + " Invocations"),
 			Unit:  "integer",
 			Metrics: []mp.Metrics{
-				{Name: "invocations_total", Label: "Total"},
-				{Name: "invocations_error", Label: "Error"},
-				{Name: "invocations_throttles", Label: "Throttles"},
+				{Name: "invocations_success", Label: "Success", Stacked: true},
+				{Name: "invocations_error", Label: "Error", Stacked: true},
+				{Name: "invocations_throttles", Label: "Throttles", Stacked: true},
 			},
 		},
 		"duration": {
