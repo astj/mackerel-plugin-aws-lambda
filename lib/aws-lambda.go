@@ -1,4 +1,4 @@
-package main
+package mpawslambda
 
 import (
 	"errors"
@@ -194,7 +194,8 @@ func (p LambdaPlugin) GraphDefinition() map[string]mp.Graphs {
 	return graphdef
 }
 
-func main() {
+// Do the plugin
+func Do() {
 	optAccessKeyID := flag.String("access-key-id", "", "AWS Access Key ID")
 	optSecretAccessKey := flag.String("secret-access-key", "", "AWS Secret Access Key")
 	optRegion := flag.String("region", "", "AWS Region")
