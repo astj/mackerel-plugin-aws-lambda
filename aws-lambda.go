@@ -40,7 +40,7 @@ type LambdaPlugin struct {
 
 	// AccessKeyID     string
 	// SecretAccessKey string
-	// Region     string
+	Region     string
 	CloudWatch *cloudwatch.CloudWatch
 }
 
@@ -58,7 +58,11 @@ func (p *LambdaPlugin) prepare() error {
 	if err != nil {
 		return err
 	}
-	p.CloudWatch = cloudwatch.New(sess, aws.NewConfig().WithRegion("ap-northeast-1"))
+	if p.Region != "" {
+		p.CloudWatch = cloudwatch.New(sess, aws.NewConfig().WithRegion(p.Region))
+	} else {
+		p.CloudWatch = cloudwatch.New(sess)
+	}
 
 	return nil
 }
@@ -173,7 +177,7 @@ func (p LambdaPlugin) GraphDefinition() map[string]mp.Graphs {
 func main() {
 	// optAccessKeyID := flag.String("access-key-id", "", "AWS Access Key ID")
 	// optSecretAccessKey := flag.String("secret-access-key", "", "AWS Secret Access Key")
-	// optRegion := flag.String("region", "", "AWS Region")
+	optRegion := flag.String("region", "", "AWS Region")
 	optIdentifier := flag.String("identifier", "", "Stream Name")
 	optTempfile := flag.String("tempfile", "", "Temp file name")
 	optPrefix := flag.String("metric-key-prefix", "lambda", "Metric key prefix")
@@ -183,7 +187,7 @@ func main() {
 
 	// plugin.AccessKeyID = *optAccessKeyID
 	// plugin.SecretAccessKey = *optSecretAccessKey
-	// plugin.Region = *optRegion
+	plugin.Region = *optRegion
 	plugin.Name = *optIdentifier
 	plugin.Prefix = *optPrefix
 
