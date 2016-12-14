@@ -1,3 +1,17 @@
 language: go
 go:
 - 1.7.3
+before_deploy:
+- go get -u github.com/laher/goxc
+- mkdir -p $TRAVIS_BUILD_DIR/dist
+- goxc -d=$TRAVIS_BUILD_DIR/dist -bc="linux,!arm darwin" -tasks=clean-destination,xc,archive,rmbin
+deploy:
+  provider: releases
+  api_key:
+    secure: qJ3NsI0j+fCo8oQZYxU82PNKS6sMky+ZFnLbeBGNuJID4WygGukORlEKkZyjsgKyJQ5o2g2j6vkJ/XYze13KTezBQVmUHk39WMWEZLCWRZGj/emxOAZ5nbhR3lGXVjerohnzPAUkZ711wKZoIwZzknCA4coKO0aVjwnePpNMrl1lvOkNXzD1FLH6GB2ftqNGnRkd9pEEDS/x+W7Ey46EtXE1fcWOELfVDQc520OLYphaK41ESxbCy4+zTHsc09p5yXnxTG2PeDlkGr85dHQUjS5GDfHMII3HAsnTanq1MBz/eWN+aOSf3bbm63qR9N7GTWtgIPLWfOT5QJt7KdwlJzdzipKn84z4pM9+w4Z9NsH7hS6h3o8S2Ddju+VzNHHV2DqlJKNgdj/w72kx1Ccn5qCeZOZjH1wFVJJLBQsPsur3yGX2dODGTg68m5RtabroOgb9PKSMr3i+hXl/An6/RFrEGNcsFCIdEdImKdJnirpxGwg6e2AS/Et2Xh9Hlfk73ZiWiUIMSX+iUHZ11iJQJZU5K96aCmfXPUM1iAoyR8FPU3fb9w0wKoV+njHqq7D3w325PRj32V2Uoiy6I7pYoh9+NogQst3FHuoYQXAhx0MnTJMfXYjUAUDMO6eW7wsPw4zvZO1gmGyVWAive5aGwkIu5Elr4ZlullyCaJM74Gk=
+  file_glob: true
+  file: "$TRAVIS_BUILD_DIR/dist/**/*.{tar.gz,zip}"
+  on:
+    repo: astj/mackerel-plugin-aws-lambda
+    tags: true
+    condition: "$TRAVIS_TAG =~ ^v[0-9].*$"
