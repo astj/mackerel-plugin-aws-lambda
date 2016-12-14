@@ -48,9 +48,6 @@ type LambdaPlugin struct {
 
 // MetricKeyPrefix interface for PluginWithPrefix
 func (p LambdaPlugin) MetricKeyPrefix() string {
-	if p.Prefix == "" {
-		p.Prefix = "lambda"
-	}
 	return p.Prefix
 }
 
