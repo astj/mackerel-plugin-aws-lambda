@@ -180,7 +180,7 @@ func (p LambdaPlugin) FetchMetrics() (map[string]interface{}, error) {
 func (p LambdaPlugin) GraphDefinition() map[string]mp.Graphs {
 	labelPrefix := strings.Title(p.Prefix)
 
-	var graphdef = map[string]mp.Graphs{
+	graphdef := map[string]mp.Graphs{
 		"invocations": {
 			Label: (labelPrefix + " Invocations"),
 			Unit:  "integer",
