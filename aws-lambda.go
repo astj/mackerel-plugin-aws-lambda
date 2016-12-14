@@ -22,12 +22,12 @@ const (
 	metricsTypeMinimum = "Minimum"
 )
 
-type metrics struct {
+type metricsGroup struct {
 	CloudWatchName string
-	MetricTypes    []metricType
+	Metrics        []metric
 }
 
-type metricType struct {
+type metric struct {
 	MackerelName string
 	Type         string
 }
@@ -71,10 +71,10 @@ func (p *LambdaPlugin) prepare() error {
 }
 
 // getLastPoint fetches a CloudWatch metric and parse
-func (p LambdaPlugin) getLastPoint(metric metrics) (*cloudwatch.Datapoint, error) {
+func (p LambdaPlugin) getLastPoint(metric metricsGroup) (*cloudwatch.Datapoint, error) {
 	now := time.Now()
-	statsInput := make([]*string, len(metric.MetricTypes))
-	for i, typ := range metric.MetricTypes {
+	statsInput := make([]*string, len(metric.Metrics))
+	for i, typ := range metric.Metrics {
 		statsInput[i] = aws.String(typ.Type)
 	}
 	response, err := p.CloudWatch.GetMetricStatistics(&cloudwatch.GetMetricStatisticsInput{
@@ -118,11 +118,11 @@ func (p LambdaPlugin) getLastPoint(metric metrics) (*cloudwatch.Datapoint, error
 func (p LambdaPlugin) FetchMetrics() (map[string]interface{}, error) {
 	stat := make(map[string]interface{})
 
-	for _, met := range [...]metrics{
-		{CloudWatchName: "Invocations", MetricTypes: []metricType{{MackerelName: "invocations_total", Type: metricsTypeSum}}},
-		{CloudWatchName: "Errors", MetricTypes: []metricType{{MackerelName: "invocations_error", Type: metricsTypeSum}}},
-		{CloudWatchName: "Throttles", MetricTypes: []metricType{{MackerelName: "invocations_throttles", Type: metricsTypeSum}}},
-		{CloudWatchName: "Duration", MetricTypes: []metricType{
+	for _, met := range [...]metricsGroup{
+		{CloudWatchName: "Invocations", Metrics: []metric{{MackerelName: "invocations_total", Type: metricsTypeSum}}},
+		{CloudWatchName: "Errors", Metrics: []metric{{MackerelName: "invocations_error", Type: metricsTypeSum}}},
+		{CloudWatchName: "Throttles", Metrics: []metric{{MackerelName: "invocations_throttles", Type: metricsTypeSum}}},
+		{CloudWatchName: "Duration", Metrics: []metric{
 			{MackerelName: "duration_avg", Type: metricsTypeAverage},
 			{MackerelName: "duration_max", Type: metricsTypeMaximum},
 			{MackerelName: "duration_min", Type: metricsTypeMinimum},
@@ -130,7 +130,7 @@ func (p LambdaPlugin) FetchMetrics() (map[string]interface{}, error) {
 	} {
 		v, err := p.getLastPoint(met)
 		if err == nil {
-			for _, typ := range met.MetricTypes {
+			for _, typ := range met.Metrics {
 				switch typ.Type {
 				case metricsTypeAverage:
 					stat[typ.MackerelName] = *v.Average
