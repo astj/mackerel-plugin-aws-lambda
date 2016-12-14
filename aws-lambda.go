@@ -34,7 +34,7 @@ type metricType struct {
 	Type         string
 }
 
-// LambdaPlugin mackerel plugin for aws kinesis
+// LambdaPlugin mackerel plugin for aws Lambda
 type LambdaPlugin struct {
 	FunctionName string
 	Prefix       string
