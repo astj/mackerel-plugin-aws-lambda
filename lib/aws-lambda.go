@@ -79,20 +79,21 @@ func getLastPointFromCloudWatch(cw cloudwatchiface.CloudWatchAPI, functionName s
 	for i, typ := range metric.Metrics {
 		statsInput[i] = aws.String(typ.Type)
 	}
-	dimensions := make([]*cloudwatch.Dimension, 0)
-	dimensions = append(dimensions, &cloudwatch.Dimension{
-		Name:  aws.String("FunctionName"),
-		Value: aws.String(functionName),
-	})
-	response, err := cw.GetMetricStatistics(&cloudwatch.GetMetricStatisticsInput{
-		Dimensions: dimensions,
+	input := &cloudwatch.GetMetricStatisticsInput{
 		StartTime:  aws.Time(now.Add(time.Duration(180) * time.Second * -1)), // 3 min
 		EndTime:    aws.Time(now),
 		MetricName: aws.String(metric.CloudWatchName),
 		Period:     aws.Int64(600),
 		Statistics: statsInput,
 		Namespace:  aws.String(namespace),
-	})
+	}
+	if functionName != "" {
+		input.Dimensions = []*cloudwatch.Dimension{{
+			Name:  aws.String("FunctionName"),
+			Value: aws.String(functionName),
+		}}
+	}
+	response, err := cw.GetMetricStatistics(input)
 	if err != nil {
 		return nil, err
 	}

@@ -98,7 +98,7 @@ func (m *mockCloudWatchClient) GetMetricStatistics(input *cloudwatch.GetMetricSt
 			Value: aws.String("myFunction"),
 		},
 	}
-	if !assert.ObjectsAreEqual(expectedDimensions, input.Dimensions) {
+	if input.Dimensions != nil && !assert.ObjectsAreEqual(expectedDimensions, input.Dimensions) {
 		return nil, errors.New("Unexpected Dimension")
 	}
 
@@ -166,7 +166,20 @@ func TestGetLastPointFromCloudWatch(t *testing.T) {
 			"Can request multiple statistics at once")
 	}
 
-	assert.Equal(t, 2, mockCw.RequestedCount, "CloudWatch request is done just twice")
+	dp2, err := getLastPointFromCloudWatch(mockCw, "",
+		metricsGroup{CloudWatchName: "Throttles", Metrics: []metric{
+			{MackerelName: "invocations_throttles", Type: metricsTypeSum},
+		}})
+	if err != nil {
+		t.Errorf("getLastPointFromCloudWatch fails: %s", err)
+	} else {
+		assert.Equal(t,
+			&cloudwatch.Datapoint{Sum: aws.Float64(25.0), Timestamp: dp2.Timestamp},
+			dp2,
+			"works even if function-name is empty")
+	}
+
+	assert.Equal(t, 3, mockCw.RequestedCount, "CloudWatch request is done once per call")
 }
 
 func TestMergeStatsFromDatapoint(t *testing.T) {
